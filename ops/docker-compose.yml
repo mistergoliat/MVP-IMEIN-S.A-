@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:15
+    env_file: ../.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db/create-app-role.sh:/docker-entrypoint-initdb.d/create-app-role.sh:ro
+      - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U \"$${POSTGRES_USER:-postgres}\" -d \"$${POSTGRES_DB:-picking}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [backend]
+
+  picking-api:
+    build: ../services/picking-api
+    env_file: ../.env
+    depends_on: [db]
+    ports: ["8000:8000"]
+    volumes:
+      - ../services/picking-api:/app
+      - ../project/output:/data/abcxyz:ro
+    networks: [backend]
+
+  ui:
+    build: ../services/ui
+    env_file: ../.env
+    depends_on: [picking-api]
+    ports: ["8080:8080"]
+    volumes:
+      - ../services/ui:/app
+    networks: [backend]
+
+  n8n:
+    build:
+      context: ..
+      dockerfile: Dockerfile.n8n
+    container_name: n8n
+    env_file: ../.env
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - MPLBACKEND=${MPLBACKEND}
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678
+    volumes:
+      - ../n8n_data:/home/node/.n8n
+      - ../data:/data
+      - ../project:/data/project
+    ports: ["5678:5678"]
+    restart: unless-stopped
+    networks: [backend]
+
+volumes:
+  pgdata:
+
+networks:
+  backend:
+    driver: bridge

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Detalle de movimiento - Imein Picking{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Movimiento</h1>
+      <p class="panel__description">Confirma los códigos y cantidades para actualizar el stock.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('moves_new') }}">Crear otro movimiento</a>
+  </header>
+
+  {% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
+  {% if success_message %}
+  <div class="alert alert-success" role="status">{{ success_message }}</div>
+  {% endif %}
+
+  {% if move %}
+  <div class="move-summary">
+    <div class="move-summary__item">
+      <span class="move-summary__label">Documento</span>
+      <strong class="move-summary__value">{{ move.doc_type }} • {{ move.doc_number }}</strong>
+    </div>
+    <div class="move-summary__item">
+      <span class="move-summary__label">Estado</span>
+      <span class="status-chip status-chip--{{ move.status }}">{{ move.status|capitalize }}</span>
+    </div>
+    <div class="move-summary__item">
+      <span class="move-summary__label">Actualizado</span>
+      <span class="move-summary__value">{{ move.updated_at }}</span>
+    </div>
+  </div>
+
+  <section class="table-card">
+    <header class="table-card__header">
+      <h2>Líneas registradas</h2>
+    </header>
+    {% if move.lines %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Solicitado</th>
+          <th>Confirmado</th>
+          <th>Origen</th>
+          <th>Destino</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in move.lines %}
+        <tr>
+          <td>{{ line.item_code }}</td>
+          <td>{{ line.qty }}</td>
+          <td>{{ line.qty_confirmed }}</td>
+          <td>{{ line.location_from }}</td>
+          <td>{{ line.location_to }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">Aún no hay líneas registradas para este movimiento.</p>
+    {% endif %}
+  </section>
+
+  {% if move.status != "approved" %}
+  <section class="form-card">
+    <header>
+      <h2>Confirmar códigos</h2>
+      <p>Escanea o ingresa manualmente los códigos y cantidades para confirmar el movimiento.</p>
+    </header>
+    <form method="post" action="{{ url_for('move_confirm', move_id=move.id) }}" id="confirm-form">
+      <input type="hidden" name="location_from" value="MAIN" />
+      <input type="hidden" name="location_to" value="MAIN" />
+      <div class="line-items" data-line-items>
+        <div class="line-items__row">
+          <div class="form-field">
+            <label>Código</label>
+            <input type="text" name="item_code" placeholder="Escanea o escribe el código" required />
+          </div>
+          <div class="form-field">
+            <label>Cantidad</label>
+            <input type="number" name="qty" min="1" value="1" required />
+          </div>
+          <div class="form-field">
+            <label>Confirmado</label>
+            <input type="number" name="qty_confirmed" min="0" value="1" />
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" data-add-line>Añadir otra línea</button>
+        <button type="submit" class="btn btn-primary">Confirmar movimiento</button>
+      </div>
+    </form>
+    <template id="line-row-template">
+      <div class="line-items__row">
+        <div class="form-field">
+          <label>Código</label>
+          <input type="text" name="item_code" placeholder="Escanea o escribe el código" required />
+        </div>
+        <div class="form-field">
+          <label>Cantidad</label>
+          <input type="number" name="qty" min="1" value="1" required />
+        </div>
+        <div class="form-field">
+          <label>Confirmado</label>
+          <input type="number" name="qty_confirmed" min="0" value="1" />
+        </div>
+      </div>
+    </template>
+  </section>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

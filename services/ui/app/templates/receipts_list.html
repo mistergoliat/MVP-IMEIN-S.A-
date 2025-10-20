@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Entradas de mercancías{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Entradas de mercancías</h1>
+      <p class="panel__description">Consulta y exporta entradas creadas.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+  </header>
+
+  <form method="get" class="form-grid" style="margin-bottom:12px;gap:12px;grid-template-columns: repeat(4, minmax(0,1fr));">
+    <input class="input" type="text" name="q" placeholder="Buscar referencia/nota" value="{{ q or '' }}" />
+    <input class="input" type="text" name="warehouse" placeholder="Almacén" value="{{ warehouse or '' }}" />
+    <input class="input" type="date" name="date_from" value="{{ date_from or '' }}" />
+    <input class="input" type="date" name="date_to" value="{{ date_to or '' }}" />
+    <div class="form-actions" style="grid-column: 1 / -1; display:flex; gap:8px;">
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+      <a class="btn" href="{{ url_for('receipts_export') }}?q={{ q or '' }}&warehouse={{ warehouse or '' }}&date_from={{ date_from or '' }}&date_to={{ date_to or '' }}">Exportar CSV</a>
+    </div>
+  </form>
+
+  <section class="table-card">
+    <div class="table-card__body">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Almacén</th>
+            <th>Referencia</th>
+            <th>Usuario</th>
+            <th>Creado</th>
+            <th>Líneas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in items or [] %}
+          <tr>
+            <td class="mono">{{ r.id }}</td>
+            <td>{{ r.warehouse_to }}</td>
+            <td>{{ r.reference }}</td>
+            <td>{{ r.user_id }}</td>
+            <td>{{ r.created_at }}</td>
+            <td>{{ r.lines_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not items %}
+      <p class="empty-state">Sin resultados.</p>
+      {% endif %}
+    </div>
+  </section>
+</section>
+{% endblock %}
+

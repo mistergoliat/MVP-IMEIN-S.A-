@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Ingreso a Imein Picking{% endblock %}
+{% block content %}
+<section class="login-screen">
+  <div class="login-intro">
+    <h1>Hola, bienvenido a Imein Picking</h1>
+    <p>
+      Centraliza el seguimiento de tus pedidos, optimiza rutas y mantén los indicadores
+      críticos siempre visibles para tu equipo.
+    </p>
+    <div class="login-tiles">
+      <article class="tile">
+        <span class="tile__label">Productividad diaria</span>
+        <span class="tile__value">+18%</span>
+        <span class="tile__trend">vs. promedio mensual</span>
+      </article>
+      <article class="tile">
+        <span class="tile__label">Órdenes al día</span>
+        <span class="tile__value">1,560</span>
+        <span class="tile__trend">Listas para despacho</span>
+      </article>
+      <article class="tile">
+        <span class="tile__label">Exactitud de inventario</span>
+        <span class="tile__value">99.4%</span>
+        <span class="tile__trend">Auditoría continua</span>
+      </article>
+    </div>
+  </div>
+  <form
+    class="login-card"
+    method="post"
+    action="{{ login_action or url_for('login_submit') }}"
+  >
+    <h2>Iniciar sesión</h2>
+    <p>Ingresa tus credenciales corporativas para continuar.</p>
+
+    <div
+      class="form-error"
+      role="alert"
+      data-error-message
+      {% if not form_error %}hidden{% endif %}
+    >
+      {{ form_error or "" }}
+    </div>
+
+    <div class="form-group">
+      <label for="username">Usuario</label>
+      <input
+        type="text"
+        id="username"
+        class="form-control"
+        name="username"
+        placeholder="Ingresa tu usuario"
+        value="{{ username }}"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="password">Contraseña</label>
+      <input
+        type="password"
+        id="password"
+        class="form-control"
+        name="password"
+        placeholder="••••••••"
+        required
+      />
+    </div>
+
+    <div class="form-meta">
+      <label>
+        <input type="checkbox" name="remember" />
+        Recordarme
+      </label>
+      <a href="#">¿Olvidaste tu contraseña?</a>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Acceder</button>
+      <button type="button" class="btn btn-secondary">Solicitar acceso</button>
+    </div>
+  </form>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.querySelector(".login-card");
+      if (!form) return;
+
+      const submitButton = form.querySelector('button[type="submit"]');
+      const errorBox = form.querySelector("[data-error-message]");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (submitButton) submitButton.disabled = true;
+        if (errorBox) {
+          errorBox.textContent = "";
+          errorBox.hidden = true;
+        }
+
+        const formData = new FormData(form);
+        const payload = {
+          username: formData.get("username"),
+          password: formData.get("password"),
+        };
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          });
+
+          const data = await response.json().catch(() => null);
+
+          if (!response.ok || !data || typeof data.access_token !== "string") {
+            const detail = data && typeof data === "object" ? data.detail : null;
+            throw new Error(detail || "No se pudo iniciar sesión.");
+          }
+
+          try {
+            localStorage.setItem("access_token", data.access_token);
+          } catch (storageError) {
+            console.warn("No se pudo persistir el token", storageError);
+          }
+
+          const redirectTo = data.redirect_to || "{{ url_for('dashboard') }}";
+          window.location.href = redirectTo;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
+          if (errorBox) {
+            errorBox.textContent = message;
+            errorBox.hidden = false;
+          }
+        } finally {
+          if (submitButton) submitButton.disabled = false;
+        }
+      });
+    });
+  </script>
+</section>
+{% endblock %}

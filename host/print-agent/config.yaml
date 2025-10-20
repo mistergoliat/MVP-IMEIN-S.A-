@@ -1,0 +1,18 @@
+﻿api_base_url: "http://localhost:8000"
+printer_name: "ZDesigner ZD888t"
+poll_interval_s: 3
+auth:
+  service_token: "local-print-token"
+  username: "admin"
+  password: ""
+  timeout_s: 10
+preview:
+  enabled: true
+  output_dir: "%TEMP%\\picking-previews"
+  dpi: "8dpmm"
+  width_in: 4
+  height_in: 6
+  rotate: 0
+  timeout_s: 10
+  open_file: true
+  labelary_url: "https://api.labelary.com/v1"

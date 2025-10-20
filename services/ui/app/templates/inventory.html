@@ -1,0 +1,168 @@
+﻿{% extends "base.html" %}
+{% block title %}Inventario â€” Movimientos y Saldos{% endblock %}
+
+{% block content %}
+<div class="inventory-layout">
+<section id="moves" class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Movimientos</h1>
+      <p class="panel__description">Salida, traslado, devolución o ajuste. Soporta modo escaneo.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+  </header>
+  <form id="frm-move" class="form-card">
+    <label>Tipo</label>
+    <select name="type" required>
+      <option value="OUTBOUND">Salida</option>
+      <option value="TRANSFER">Traslado</option>
+      <option value="RETURN">DevoluciÃ³n</option>
+      <option value="ADJUST">Ajuste</option>
+    </select>
+
+    <div class="wh">
+      <label>Desde</label>
+      <select name="warehouse_from"></select>
+      <label>Hacia</label>
+      <select name="warehouse_to"></select>
+    </div>
+
+    <div class="scan-mode">
+      <label><input type="radio" name="mode" value="scan" checked> Escaneo</label>
+      <label><input type="radio" name="mode" value="manual"> Manual</label>
+    </div>
+
+    <div id="scan-panel">
+      <input id="scan-input" autocomplete="off" placeholder="Escanee aquÃ­" />
+      <div id="scan-log"></div>
+    </div>
+
+    <div id="manual-panel" hidden>
+      <fieldset class="multi-form" data-multi-form>
+        <legend>LÃ­neas</legend>
+        <button type="button" class="btn btn-ghost" data-add-row>Agregar lÃ­nea</button>
+        <div class="multi-rows" data-multi-rows>
+          <div class="multi-row" data-row>
+            <div class="form-field">
+              <label>SKU</label>
+              <input name="item_code" type="text" maxlength="64" required list="item_code_options" autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label>Descripción</label>
+              <input name="item_name" type="text" maxlength="255" list="item_name_options" autocomplete="off" placeholder="(opcional)" />
+            </div>
+          <div class="form-field">
+            <!-- UOM oculto (default en backend) -->
+            <input name="uom" type="hidden" value="EA" />
+          </div>
+            <div class="form-field">
+              <label>Cantidad</label>
+              <input name="qty" type="number" step="0.001" min="0.001" value="1" required />
+            </div>
+            <div class="form-field">
+              <label>Lote (opt)</label>
+              <input name="batch" type="text" maxlength="64" />
+            </div>
+            <div class="form-field">
+              <label>Serie (opt)</label>
+              <input name="serial" type="text" maxlength="64" />
+            </div>
+            <button type="button" class="btn btn-ghost" data-remove-row hidden>Eliminar</button>
+          </div>
+        </div>
+      </fieldset>
+      <datalist id="item_code_options"></datalist>
+      <datalist id="item_name_options"></datalist>
+      <button type="button" id="btn-add-mv-line" class="btn btn-ghost">Agregar</button>
+    </div>
+
+    <label>Referencia</label>
+    <input name="reference">
+
+    <label>Nota</label>
+    <input name="note">
+
+    <div class="actions">
+      <button type="submit">Confirmar</button>
+      <button type="button" id="btn-clear-mv">Limpiar</button>
+    </div>
+    <div id="mv-status"></div>
+  </form>
+</section>
+
+<section id="views" class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Vistas</h1>
+      <p class="panel__description">Consulta de saldos e historial de movimientos.</p>
+    </div>
+  </header>
+  <div class="form-card">
+    <h2>Saldos</h2>
+    <div class="filters">
+      <input id="f-item" placeholder="Item code">
+      <select id="f-wh"><option value="">(todas)</option></select>
+      <button id="btn-load-balance" type="button">Consultar</button>
+    </div>
+    <table id="tbl-balance">
+      <thead><tr><th>Item</th><th>WH</th><th>Lote</th><th>Serie</th><th>Qty</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Ãšltimos movimientos</h2>
+    <button id="btn-load-mov" type="button">Actualizar</button>
+    <table id="tbl-mov">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Item</th><th>Qty</th><th>WH From</th><th>WH To</th><th>Ref</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="count" class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Recuento por bodega</h1>
+      <p class="panel__description">Escaneo rápido con multiplicador xN</p>
+    </div>
+  </header>
+  <div class="form-card">
+    <label>Bodega</label>
+    <select id="count-wh"></select>
+    <button id="btn-count-start" type="button">Iniciar</button>
+    <div id="count-area" hidden>
+      <input id="count-scan" placeholder="Escanee aquÃ­" />
+      <div id="count-log"></div>
+      <button id="btn-count-close" type="button">Cerrar sesión</button>
+    </div>
+    <div id="count-status"></div>
+  </div>
+  </section>
+
+<section id="scan-move" class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Escaneo: Salida/Traslado</h1>
+      <p class="panel__description">Carrito virtual por escaneo</p>
+    </div>
+  </header>
+  <div class="form-card">
+    <label>Tipo</label>
+    <select id="out-type">
+      <option value="OUTBOUND">Salida</option>
+      <option value="TRANSFER">Traslado</option>
+    </select>
+    <label>Desde</label><select id="out-wf"></select>
+    <label>Hacia</label><select id="out-wt"></select>
+    <button id="btn-out-start" type="button">Iniciar</button>
+    <div id="out-area" hidden>
+      <input id="out-scan" placeholder="Escanee aquÃ­" />
+      <div id="out-log"></div>
+      <button id="btn-out-confirm" type="button">Confirmar</button>
+    </div>
+    <div id="out-status"></div>
+  </div>
+</section>
+
+</div>
+<script src="{{ url_for('static', path='/inventory.js') }}"></script>
+{% endblock %}

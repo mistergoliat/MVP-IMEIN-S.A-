@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Nuevo movimiento - Imein Picking{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Nuevo movimiento</h1>
+      <p class="panel__description">Selecciona el tipo de operación para generar un movimiento de picking.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver al dashboard</a>
+  </header>
+
+  <div class="operation-menu">
+    {% for op in operations %}
+    <a class="operation-menu__card {% if selected and selected.doc_type == op.doc_type %}operation-menu__card--active{% endif %}" href="{{ url_for('moves_new') }}?type={{ op.doc_type }}">
+      <span class="operation-menu__badge">{{ op.doc_type }}</span>
+      <h2>{{ op.name }}</h2>
+      <p>{{ op.description }}</p>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if selected %}
+  <form method="post" class="form-card">
+    <input type="hidden" name="doc_type" value="{{ selected.doc_type }}" />
+    <div class="form-field">
+      <label for="doc_number">Número de documento</label>
+      <input
+        id="doc_number"
+        name="doc_number"
+        type="text"
+        required
+        maxlength="64"
+        placeholder="Ingresa el identificador del documento"
+        value="{{ doc_number }}"
+      />
+    </div>
+    {% if form_error %}
+    <div class="alert alert-error" role="alert">{{ form_error }}</div>
+    {% endif %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Crear {{ selected.name|lower }}</button>
+    </div>
+  </form>
+  {% elif form_error %}
+  <div class="alert alert-error" role="alert">{{ form_error }}</div>
+  {% endif %}
+</section>
+{% endblock %}

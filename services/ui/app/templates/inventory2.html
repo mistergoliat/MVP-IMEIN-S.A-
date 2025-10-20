@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Inventario — Movimientos y Saldos{% endblock %}
+
+{% block content %}
+<div class="inventory-layout">
+  <section id="moves" class="panel">
+    <header class="panel__header">
+      <div>
+        <h1>Movimientos</h1>
+        <p class="panel__description">Salida, traslado, devolución o ajuste.</p>
+      </div>
+      <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+    </header>
+    <form id="frm-move" class="form-card">
+      <fieldset class="multi-form" data-multi-form>
+        <legend>Líneas</legend>
+        <div class="multi-rows" data-multi-rows>
+          <div class="multi-row" data-row>
+            <div class="form-field">
+              <label>SKU</label>
+              <input name="item_code" type="text" maxlength="64" required list="item_code_options" autocomplete="off" />
+            </div>
+            <div class="form-field">
+              <label>Descripción</label>
+              <input name="item_name" type="text" maxlength="255" list="item_name_options" autocomplete="off" placeholder="(opcional)" />
+            </div>
+            <div class="form-field">
+              <input name="uom" type="hidden" value="EA" />
+            </div>
+            <div class="form-field">
+              <label>Cantidad</label>
+              <input name="qty" type="number" step="0.001" min="0.001" value="1" required />
+            </div>
+            <div class="form-field">
+              <label>Lote (opt)</label>
+              <input name="batch" type="text" maxlength="64" />
+            </div>
+            <div class="form-field">
+              <label>Serie (opt)</label>
+              <input name="serial" type="text" maxlength="64" />
+            </div>
+            <button type="button" class="btn btn-ghost" data-remove-row hidden>Eliminar</button>
+          </div>
+        </div>
+        <datalist id="item_code_options"></datalist>
+        <datalist id="item_name_options"></datalist>
+        <button type="button" id="btn-add-mv-line" class="btn btn-ghost">Agregar</button>
+      </fieldset>
+
+      <div class="form-grid" style="margin-top:12px;">
+        <div class="form-field">
+          <label>Tipo</label>
+          <select name="type" required>
+            <option value="OUTBOUND">Salida</option>
+            <option value="TRANSFER">Traslado</option>
+            <option value="RETURN">Devolución</option>
+            <option value="ADJUST">Ajuste</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Desde</label>
+          <select name="warehouse_from"></select>
+        </div>
+        <div class="form-field">
+          <label>Hacia</label>
+          <select name="warehouse_to"></select>
+        </div>
+        <div class="form-field">
+          <label>Referencia</label>
+          <input name="reference" maxlength="64" />
+        </div>
+        <div class="form-field">
+          <label>Nota</label>
+          <input name="note" maxlength="255" />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Confirmar</button>
+        <button type="button" id="btn-clear-mv" class="btn btn-secondary">Limpiar</button>
+      </div>
+      <div id="mv-status"></div>
+    </form>
+  </section>
+
+  <section id="views" class="panel">
+    <header class="panel__header">
+      <div>
+        <h1>Vistas</h1>
+        <p class="panel__description">Consulta de saldos e historial de movimientos.</p>
+      </div>
+    </header>
+    <div class="table-card">
+      <header class="table-card__header">
+        <h2>Saldos</h2>
+        <div class="filters" style="display:flex; gap:8px; align-items:center;">
+          <input id="f-item" placeholder="Item code" list="balance_code_options" />
+          <input id="f-name" placeholder="Nombre (opcional)" list="balance_name_options" />
+          <select id="f-wh"><option value="">(todas)</option></select>
+          <button id="btn-load-balance" type="button" class="btn btn-secondary">Consultar</button>
+        </div>
+      </header>
+      <div class="table-card__body">
+        <table id="tbl-balance" class="data-table">
+          <thead><tr><th>Item</th><th>Nombre</th><th>WH</th><th>Lote</th><th>Qty</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <datalist id="balance_code_options"></datalist>
+        <datalist id="balance_name_options"></datalist>
+      </div>
+    </div>
+
+    <div class="table-card" style="margin-top:16px;">
+      <header class="table-card__header">
+        <h2>Últimos movimientos</h2>
+        <button id="btn-load-mov" type="button" class="btn btn-secondary">Actualizar</button>
+      </header>
+      <div class="table-card__body">
+        <table id="tbl-mov" class="data-table">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Item</th><th>Qty</th><th>WH From</th><th>WH To</th><th>Ref</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', path='inventory.js') }}"></script>
+{% endblock %}

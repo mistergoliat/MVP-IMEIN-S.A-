@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Operaciones - Imein Picking{% endblock %}
+
+{% block header_actions %}
+  {% if username %}
+  <div class="user-pill" role="presentation">
+    <span class="user-pill__icon" aria-hidden="true">👋</span>
+    <div class="user-pill__meta">
+      <span class="user-pill__label">Conectado</span>
+      <strong class="user-pill__value">{{ username }}</strong>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <header class="dashboard-hero">
+    <div class="dashboard-hero__content">
+      <h1>Centro de operaciones</h1>
+      <p>
+        Orquesta los flujos de recepción, preparación, conteo e impresión desde un mismo panel.
+        Monitorea el estado de cada módulo y entra directo a la acción que necesitas.
+      </p>
+    </div>
+    <div class="dashboard-hero__stats">
+      <article class="stat-card">
+        <span class="stat-card__label">Órdenes activas</span>
+        <strong class="stat-card__value">128</strong>
+        <span class="stat-card__trend stat-card__trend--up">+12% hoy</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card__label">Etiquetas impresas</span>
+        <strong class="stat-card__value">2.340</strong>
+        <span class="stat-card__trend">Turno mañana</span>
+      </article>
+    </div>
+  </header>
+
+  <section class="operation-grid" aria-label="Acciones rápidas">
+    <article class="operation-card operation-card--inbound">
+      <header class="operation-card__header">
+        <div class="operation-card__icon" aria-hidden="true"></div>
+        <div class="operation-card__meta">
+          <span class="operation-card__status">Disponible</span>
+          <h2>Entradas de mercancía</h2>
+        </div>
+      </header>
+      <p class="operation-card__description">Registra ingresos a bodegas (BP, BR, Z1/M*).</p>
+      <div class="operation-card__actions">
+        <a class="btn btn-primary" href="{{ url_for('receipts_new') }}">Crear entrada</a>
+        <a class="btn" href="{{ url_for('receipts_list') }}">Ver entradas</a>
+        <a class="btn" href="{{ url_for('receipts_export') }}">Exportar</a>
+      </div>
+    </article>
+    <article class="operation-card operation-card--print">
+      <header class="operation-card__header">
+        <div class="operation-card__icon" aria-hidden="true"></div>
+        <div class="operation-card__meta">
+          <span class="operation-card__status">Disponible</span>
+          <h2>Impresión etiquetas</h2>
+        </div>
+      </header>
+      <p class="operation-card__description">Genera etiquetas CODE128 desde la cola centralizada.</p>
+      <div class="operation-card__actions">
+        <a class="btn btn-primary" href="{{ url_for('print_labels') }}">Ir a impresión</a>
+      </div>
+    </article>
+    <article class="operation-card operation-card--stock">
+      <header class="operation-card__header">
+        <div class="operation-card__icon" aria-hidden="true"></div>
+        <div class="operation-card__meta">
+          <span class="operation-card__status">Disponible</span>
+          <h2>Inventario</h2>
+        </div>
+      </header>
+      <p class="operation-card__description">Saldos rápidos y últimos movimientos.</p>
+      <div class="operation-card__actions">
+        <a class="btn btn-primary" href="/inventory">Abrir inventario</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="operation-grid" aria-label="Operaciones">
+    {% for op in operations %}
+      {% if op.slug != 'inv' and op.slug not in ['so','tr','rt'] %}
+      <article class="operation-card operation-card--{{ op.slug }}">
+        <header class="operation-card__header">
+          <div class="operation-card__icon" aria-hidden="true"></div>
+          <div class="operation-card__meta">
+            <span class="operation-card__status">{{ op.status }}</span>
+            <h2>{{ op.name }}</h2>
+          </div>
+        </header>
+        <p class="operation-card__description">{{ op.description }}</p>
+        <div class="operation-card__actions">
+          <a class="btn btn-primary" href="{{ op.href }}">{{ op.cta }}</a>
+          {% if op.doc_type %}
+          <span class="operation-card__tag">{{ op.doc_type }}</span>
+          {% endif %}
+        </div>
+      </article>
+      {% endif %}
+    {% endfor %}
+  </section>
+  <section class="operation-grid" aria-label="Listados">
+    
+    <article class="operation-card operation-card--stock">
+      <header class="operation-card__header">
+        <div class="operation-card__icon" aria-hidden="true"></div>
+        <div class="operation-card__meta">
+          <span class="operation-card__status">Disponible</span>
+          <h2>Artículos</h2>
+        </div>
+      </header>
+      <p class="operation-card__description">Catálogo de productos y exportación.</p>
+      <div class="operation-card__actions">
+        <a class="btn btn-primary" href="{{ url_for('products_list') }}">Ver</a>
+        <a class="btn" href="{{ url_for('products_export') }}">Exportar</a>
+      </div>
+    </article>
+    <article class="operation-card operation-card--analytics">
+      <header class="operation-card__header">
+        <div class="operation-card__icon" aria-hidden="true"></div>
+        <div class="operation-card__meta">
+          <span class="operation-card__status">Disponible</span>
+          <h2>ABC-XYZ</h2>
+        </div>
+      </header>
+      <p class="operation-card__description">Carga resultados y visualiza KPIs y matriz 3x3.</p>
+      <div class="operation-card__actions">
+        <a class="btn btn-primary" href="{{ url_for('analytics_page') }}">Ir a ABC-XYZ</a>
+      </div>
+    </article>
+  </section>
+
+  <!-- analytics moved
+    <article class="operation-card operation-card--analytics">
+      <header class="operation-card__header">
+        <div class="operation-card__icon" aria-hidden="true"></div>
+        <div class="operation-card__meta">
+          <span class="operation-card__status">Disponible</span>
+          <h2>ABC–XYZ</h2>
+        </div>
+      </header>
+      <p class="operation-card__description">Carga resultados y visualiza KPIs y matriz 3×3.</p>
+      <div class="operation-card__actions">
+        <a class="btn btn-primary" href="{{ url_for('analytics_page') }}">Ir a ABC–XYZ</a>
+      </div>
+    </article>
+  -->
+</section>
+{% endblock %}

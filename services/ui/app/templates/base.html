@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Imein Picking{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}" />
+    <script defer src="{{ url_for('static', path='app.js') }}"></script>
+  </head>
+  <body class="app-body">
+    <div class="app-surface">
+      <header class="app-header">
+        <div class="brand">
+          <span class="brand__badge">Imein</span>
+          <span class="brand__text">
+            <strong>Picking</strong>
+            <small>Control inteligente de operaciones</small>
+          </span>
+        </div>
+        <nav class="top-nav" aria-label="Principal">
+          <a href="/">Inicio</a>
+          <a href="/receipts/new">Nueva entrada</a>
+          <a href="/receipts">Entradas</a>
+          <a href="/moves/list">Movimientos</a>
+          <a href="/products">Artículos</a>
+          <a href="/inventory">Inventario</a>
+          <a href="/print">Impresión</a>
+          <a href="/analytics/abcxyz">Analytics</a>
+        </nav>
+        {% block header_actions %}{% endblock %}
+      </header>
+      <main class="app-main">
+        {% block content %}{% endblock %}
+      </main>
+      <footer class="app-footer">
+        © 2025 Imein. Todos los derechos reservados.
+      </footer>
+    </div>
+  </body>
+</html>

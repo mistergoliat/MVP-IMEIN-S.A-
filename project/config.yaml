@@ -1,0 +1,29 @@
+sql:
+  driver: "{ODBC Driver 18 for SQL Server}"
+  server: "MI_SERVIDOR_SQL"
+  database: "SBODemoCL"
+  user: "usuario_ro"
+  password: "********"
+  trustservercertificate: "yes"
+
+data_window:
+  months_back: 12
+
+pricing:
+  use_avg_price: true
+  use_price_list: false
+  price_list_id: 1
+
+policy:
+  z_by_abc: {A: 1.96, B: 1.65, C: 1.28}
+  z_by_xyz: {X: 1.65, Y: 1.44, Z: 1.28}
+  lead_time_by_abc: {A: 20, B: 15, C: 10}
+  default_z: 1.65
+  default_lead_time_days: 15
+  ordering_cost_per_order: 15000
+  annual_holding_rate: 0.25
+  use_eoq: true
+
+output:
+  dir: "./output"
+  excel_filename: "abcxyz_results.xlsx"

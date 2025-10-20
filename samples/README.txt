@@ -1,0 +1,1 @@
+Los archivos de ejemplo generados por el pipeline ABC–XYZ se encuentran en `project/output/` y son montados por el contenedor `picking-api` en `/data/abcxyz`. No incluyas copias locales aquí; este directorio sólo documenta la ubicación real.

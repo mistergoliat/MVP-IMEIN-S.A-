@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Impresion de etiquetas ZPL{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Impresión de etiquetas</h1>
+      <p class="panel__description">
+        Renderiza y envía etiquetas ZPL a impresoras Zebra ZD888T en modo local o de red.
+      </p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver al dashboard</a>
+  </header>
+
+  {% if config_error %}
+  <div class="alert alert-error" role="alert">{{ config_error }}</div>
+  {% endif %}
+
+  <div
+    class="print-app"
+    data-print-app
+    data-printer-config='{{ printer_config | tojson | safe if printer_config else "{}" }}'
+    data-jobs='{{ (jobs or []) | tojson | safe }}'
+  >
+    <form class="form-card" data-print-form novalidate>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="item_code">Codigo</label>
+          <input id="item_code" name="item_code" type="text" maxlength="24" required />
+        </div>
+        <div class="form-field">
+          <label for="item_name">Descripcion</label>
+          <input id="item_name" name="item_name" type="text" maxlength="32" required />
+        </div>
+        <div class="form-field">
+          <label for="fecha">Fecha</label>
+          <input id="fecha" name="fecha" type="text" placeholder="DD-MM-AAAA" maxlength="16" />
+        </div>
+        <div class="form-field">
+          <label for="copies">Copias solicitadas</label>
+          <input id="copies" name="copies" type="number" min="1" max="10" value="1" required />
+        </div>
+        <div class="form-field" data-printer-select-wrapper hidden>
+          <label for="printer">Impresora local</label>
+          <div class="printer-select">
+            <select id="printer" name="printer" data-printer-select></select>
+            <button type="button" class="btn btn-ghost" data-refresh-printers>Actualizar lista</button>
+          </div>
+          <p class="form-hint" data-printer-hint>
+            Conecta QZ Tray y acepta el certificado para habilitar la impresión local.
+          </p>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" data-preview-btn>Previsualizar</button>
+        <button type="button" class="btn btn-primary" data-print-btn>Imprimir</button>
+      </div>
+    </form>
+
+    <section class="preview-card" data-preview-panel hidden>
+      <header class="preview-card__header">
+        <h2>Resultado de previsualizacion</h2>
+        <span class="badge" data-template-badge></span>
+      </header>
+      <dl class="preview-meta">
+        <div>
+          <dt>Copias solicitadas</dt>
+          <dd data-copies-value>--</dd>
+        </div>
+        <div>
+          <dt>Etiquetas físicas</dt>
+          <dd data-effective-value>--</dd>
+        </div>
+        <div>
+          <dt>Modo de impresion</dt>
+          <dd data-mode-value>--</dd>
+        </div>
+      </dl>
+      <details class="preview-zpl" data-zpl-wrapper>
+        <summary>Ver ZPL generado</summary>
+        <pre data-zpl-preview></pre>
+      </details>
+    </section>
+
+    <div class="alert" role="status" data-status-message hidden></div>
+
+    <div class="alert alert-error" role="alert" data-jobs-error {% if not jobs_error %}hidden{% endif %}>
+      {{ jobs_error or '' }}
+    </div>
+
+    <section class="table-card" data-jobs-section>
+      <header class="table-card__header">
+        <h2>Trabajos en cola</h2>
+        <button type="button" class="btn btn-ghost" data-refresh-jobs>Actualizar cola</button>
+      </header>
+      <div class="table-card__body">
+        <table class="data-table" data-jobs-table {% if not jobs %}hidden{% endif %}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Estado</th>
+              <th>Copias</th>
+              <th>Creado</th>
+            </tr>
+          </thead>
+          <tbody data-jobs-body>
+            {% for job in jobs or [] %}
+            <tr>
+              <td class="mono">{{ job.id }}</td>
+              <td>{{ job.status|capitalize }}</td>
+              <td>{{ job.copies }}</td>
+              <td>{{ job.created_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p class="empty-state" data-jobs-empty {% if jobs %}hidden{% endif %}>
+          No hay trabajos pendientes en la cola.
+        </p>
+      </div>
+    </section>
+  </div>
+</section>
+<script src="{{ url_for('static', path='vendor/qz-tray.js') }}" defer></script>
+{% endblock %}
+
