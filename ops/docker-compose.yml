@@ -12,6 +12,7 @@ services:
       timeout: 5s
       retries: 5
     networks: [backend]
+    restart: unless-stopped
 
   picking-api:
     build: ../services/picking-api
@@ -22,6 +23,7 @@ services:
       - ../services/picking-api:/app
       - ../project/output:/data/abcxyz:ro
     networks: [backend]
+    restart: unless-stopped
 
   ui:
     build: ../services/ui
@@ -31,6 +33,7 @@ services:
     volumes:
       - ../services/ui:/app
     networks: [backend]
+    restart: unless-stopped
 
   n8n:
     build:
