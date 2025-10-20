@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Artículos{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Artículos</h1>
+      <p class="panel__description">Lista y exporta artículos del catálogo.</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <a class="btn" href="{{ url_for('products_new') }}">Agregar artículo</a>
+      <a class="btn" href="{{ url_for('analytics_template_products') }}">Exportar plantilla ABC‑XYZ</a>
+      <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+    </div>
+  </header>
+
+  <form method="get" class="form-grid" style="margin-bottom:12px;gap:12px;grid-template-columns: repeat(3, minmax(0,1fr));">
+    <input class="input" type="text" name="q" placeholder="Buscar código o nombre" value="{{ q or '' }}" />
+    <select name="active">
+      <option value="">Todos</option>
+      <option value="1" {% if active=='1' %}selected{% endif %}>Activos</option>
+      <option value="0" {% if active=='0' %}selected{% endif %}>Inactivos</option>
+    </select>
+    <div class="form-actions" style="grid-column: 1 / -1; display:flex; gap:8px;">
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+      <a class="btn" href="{{ url_for('products_export') }}?q={{ q or '' }}&active={{ active or '' }}">Exportar CSV</a>
+    </div>
+  </form>
+
+  <section class="table-card">
+    <div class="table-card__body">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>UOM</th>
+            <th>Activo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in items or [] %}
+          <tr>
+            <td class="mono">{{ p.item_code }}</td>
+            <td>{{ p.item_name }}</td>
+            <td>{{ p.uom }}</td>
+            <td>{{ 'Sí' if p.active else 'No' }}</td>
+            <td>
+              <a class="btn btn-ghost" href="{{ url_for('products_edit', code=p.item_code) }}">Editar</a>
+              <form method="post" action="{{ url_for('products_delete', code=p.item_code) }}" style="display:inline" onsubmit="return confirm('¿Eliminar artículo {{ p.item_code }}?');">
+                <button class="btn btn-ghost" type="submit">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not items %}
+      <p class="empty-state">Sin resultados.</p>
+      {% endif %}
+    </div>
+  </section>
+</section>
+{% endblock %}

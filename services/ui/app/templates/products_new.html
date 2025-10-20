@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Nuevo artículo{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Nuevo artículo</h1>
+      <p class="panel__description">Crea o actualiza un artículo básico.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('products_list') }}">Volver</a>
+  </header>
+
+  {% if error %}
+  <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" class="form-card">
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Código</label>
+        <input name="item_code" required maxlength="64" value="{{ form.item_code or '' }}" />
+      </div>
+      <div class="form-field">
+        <label>Nombre</label>
+        <input name="item_name" required maxlength="255" value="{{ form.item_name or '' }}" />
+      </div>
+      <div class="form-field">
+        <label>UOM</label>
+        <input name="uom" maxlength="16" value="{{ form.uom or 'EA' }}" />
+      </div>
+    </div>
+    <label class="checkbox"><input type="checkbox" name="requires_lot" {% if form.requires_lot %}checked{% endif %}/> Requiere lote</label>
+    <label class="checkbox"><input type="checkbox" name="requires_serial" {% if form.requires_serial %}checked{% endif %}/> Requiere serie</label>
+    <label class="checkbox"><input type="checkbox" name="active" {% if form.active!=false %}checked{% endif %}/> Activo</label>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+

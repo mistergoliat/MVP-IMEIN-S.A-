@@ -1,0 +1,1 @@
+﻿Insertar fotografia del resultado impreso en esta ubicacion con el nombre label-photo.png.

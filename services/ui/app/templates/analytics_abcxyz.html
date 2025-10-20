@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Análisis ABC–XYZ{% endblock %}
+
+{% block header_actions %}
+  {% if username %}
+  <div class="user-pill" role="presentation">
+    <div class="user-pill__meta">
+      <span class="user-pill__label">Conectado</span>
+      <strong class="user-pill__value">{{ username }}</strong>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="panel" data-analytics-abcxyz>
+  <header class="panel__header">
+    <div>
+      <h1>Análisis ABC–XYZ</h1>
+      <p class="panel__description">Sube resultados por período, explora KPIs, matriz 3×3 y tabla.</p>
+      <div class="muted" data-period-meta>Periodo: <strong data-period>—</strong> · Actualizado: <span data-updated>—</span></div>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+  </header>
+
+  <section class="form-card" aria-label="Cargar archivo">
+    <form data-uploader>
+      <div class="form-field">
+        <label>Periodo</label>
+        <input type="text" name="period" placeholder="YYYY-MM" required />
+      </div>
+      <div class="form-field">
+        <label>Archivo (XLSX/CSV)</label>
+        <input type="file" name="file" accept=".xlsx,.xls,.csv" required />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Subir</button>
+      </div>
+    </form>
+    <div class="alert" role="status" data-upload-status hidden></div>
+  </section>
+
+  <section class="kpi-grid">
+    <article class="stat-card"><span class="stat-card__label">Total SKUs</span><strong class="stat-card__value" data-kpi-total>0</strong></article>
+    <article class="stat-card"><span class="stat-card__label">% A</span><strong class="stat-card__value" data-kpi-a>0%</strong></article>
+    <article class="stat-card"><span class="stat-card__label">% B</span><strong class="stat-card__value" data-kpi-b>0%</strong></article>
+    <article class="stat-card"><span class="stat-card__label">% C</span><strong class="stat-card__value" data-kpi-c>0%</strong></article>
+    <article class="stat-card"><span class="stat-card__label">Salidas/Disponibles (día)</span><strong class="stat-card__value" data-kpi-sale-rate>0.00</strong></article>
+    <article class="stat-card"><span class="stat-card__label">Perfect Order %</span><strong class="stat-card__value" data-kpi-pop>0.0%</strong><small class="stat-card__trend" data-kpi-pop-faults></small></article>
+    <article class="stat-card"><span class="stat-card__label">Bajo mínimo</span><strong class="stat-card__value" data-kpi-low>0</strong></article>
+  </section>
+
+  <section class="panel">
+    <header class="panel__header"><h2>Matriz ABC–XYZ</h2></header>
+    <div class="heatmap" data-heatmap></div>
+  </section>
+
+  <section class="panel">
+    <header class="panel__header">
+      <h2>Resultados</h2>
+      <div class="filters">
+        <label>ABC
+          <select data-filter-abc>
+            <option value="">Todos</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </label>
+        <label>XYZ
+          <select data-filter-xyz>
+            <option value="">Todos</option>
+            <option value="X">X</option>
+            <option value="Y">Y</option>
+            <option value="Z">Z</option>
+          </select>
+        </label>
+        <input type="search" placeholder="Buscar código" data-search-code />
+        <label style="margin-left:8px;">
+          <input type="checkbox" data-filter-low /> Sólo bajo mínimo
+        </label>
+      </div>
+    </header>
+    <div class="table-card__body">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>item_code</th>
+            <th>item_name</th>
+            <th>abc</th>
+            <th>xyz</th>
+            <th>class</th>
+            <th>policy</th>
+            <th>min</th>
+            <th>max</th>
+            <th>stock</th>
+          </tr>
+        </thead>
+        <tbody data-table-body></tbody>
+      </table>
+      <p class="empty-state" data-empty hidden>No hay datos.</p>
+    </div>
+  </section>
+</section>
+
+<style>
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.heatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px}
+.heatmap .cell{display:flex;align-items:center;justify-content:center;height:64px;border-radius:8px;color:#111;font-weight:600}
+.heatmap .hdr{font-weight:700;display:flex;align-items:center;justify-content:center}
+@media (max-width: 720px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.row-low{background: #fff6f6}
+.row-low td:last-child{font-weight:700;color:#b00020}
+</style>
+<script>
+// Lightweight fetch to populate period, summary and the KPIs
+(async () => {
+  try {
+    const res = await fetch('/analytics/abcxyz/latest', { credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.detail || 'Error');
+    const period = data?.period || '';
+    const total = data?.summary?.kpi?.total || 0;
+    const pa = data?.summary?.kpi?.percentA ?? 0;
+    const pb = data?.summary?.kpi?.percentB ?? 0;
+    const pc = data?.summary?.kpi?.percentC ?? 0;
+    const el = (sel) => document.querySelector(sel);
+    el('[data-period]') && (el('[data-period]').textContent = String(period || '--'));
+    el('[data-kpi-total]') && (el('[data-kpi-total]').textContent = String(total));
+    el('[data-kpi-a]') && (el('[data-kpi-a]').textContent = `${pa}%`);
+    el('[data-kpi-b]') && (el('[data-kpi-b]').textContent = `${pb}%`);
+    el('[data-kpi-c]') && (el('[data-kpi-c]').textContent = `${pc}%`);
+    // Sale-rate
+    if (period) {
+      const r = await fetch(`/analytics/abcxyz/kpi/sale_rate?period=${encodeURIComponent(period)}`, { credentials: 'include' });
+      const k = await r.json();
+      if (r.ok && k && typeof k === 'object') {
+        const rate = Number(k.rate || 0);
+        el('[data-kpi-sale-rate]') && (el('[data-kpi-sale-rate]').textContent = rate.toFixed(2));
+      }
+      // POP
+      const p = await fetch(`/analytics/abcxyz/kpi/perfect_order?period=${encodeURIComponent(period)}`, { credentials: 'include' });
+      const pop = await p.json();
+      if (p.ok && pop && typeof pop === 'object') {
+        const val = Number(pop.pop || 0) * 100;
+        el('[data-kpi-pop]') && (el('[data-kpi-pop]').textContent = `${val.toFixed(1)}%`);
+        const faults = Number(pop.faults || 0);
+        const total = Number(pop.total || 0);
+        const faultsBox = el('[data-kpi-pop-faults]');
+        if (faultsBox) faultsBox.textContent = total ? `Fallas: ${faults}/${total}` : '';
+      }
+    }
+  } catch (e) {
+    // swallow to avoid blocking UI
+  }
+})();
+</script>
+{% endblock %}

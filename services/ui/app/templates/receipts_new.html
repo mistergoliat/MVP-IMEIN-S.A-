@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Nueva Entrada de Mercancía{% endblock %}
+
+{% block content %}
+<section class="panel" data-receipt-app>
+  <header class="panel__header">
+    <div>
+      <h1>Entrada de mercancía</h1>
+      <p class="panel__description">Carga encabezado y líneas; opcionalmente imprime etiquetas para todos los SKUs.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+  </header>
+
+  <form class="form-card" data-receipt-form>
+    <fieldset>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Almacén destino</label>
+          <select name="warehouse_to" required>
+            <option value="BR" selected>BR</option>
+            <option value="BP">BP</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Referencia (opcional)</label>
+          <input type="text" name="reference" maxlength="64" />
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Nota (opcional)</label>
+        <input type="text" name="note" maxlength="255" />
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" name="print_all" /> Imprimir etiquetas para todos los SKUs
+      </label>
+
+      <label class="checkbox" style="margin-top:8px;">
+        <input type="checkbox" name="print_now_local" data-print-now /> Imprimir ahora (local con QZ)
+      </label>
+
+      <div class="form-field" data-printer-select-wrapper hidden>
+        <label for="receipt-printer">Impresora local</label>
+        <div class="printer-select">
+          <select id="receipt-printer" name="printer" data-printer-select></select>
+          <button type="button" class="btn btn-ghost" data-refresh-printers>Actualizar lista</button>
+        </div>
+        <p class="form-hint" data-printer-hint>
+          Conecta QZ Tray y acepta el certificado para habilitar la impresión local.
+        </p>
+      </div>
+    </fieldset>
+
+    <fieldset class="multi-form" data-multi-form>
+      <legend>Líneas</legend>
+      <button type="button" class="btn btn-ghost" data-add-row>Agregar línea</button>
+      <div class="multi-rows" data-multi-rows>
+        <div class="multi-row" data-row>
+          <div class="form-field">
+            <label>SKU</label>
+            <input name="item_code" type="text" maxlength="64" required list="item_code_options" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label>Descripción</label>
+            <input name="item_name" type="text" maxlength="255" required list="item_name_options" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label>UOM</label>
+            <input name="uom" type="text" value="EA" maxlength="16" required />
+          </div>
+          <div class="form-field">
+            <label>Cantidad</label>
+            <input name="qty" type="number" step="1" min="1" value="1" required />
+          </div>
+          <div class="form-field">
+            <label>Lote (opt)</label>
+            <input name="batch" type="text" maxlength="64" />
+          </div>
+          <div class="form-field">
+            <label>Serie (opt)</label>
+            <input name="serial" type="text" maxlength="64" />
+          </div>
+          <button type="button" class="btn btn-ghost" data-remove-row hidden>Eliminar</button>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Confirmar entrada</button>
+    </div>
+    <div class="alert" role="status" data-receipt-status hidden></div>
+    <datalist id="item_code_options"></datalist>
+    <datalist id="item_name_options"></datalist>
+  </form>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.3/qz-tray.js" defer></script>
+<script>
+  // C3 — load warehouses into receipt select
+  (async () => {
+    const sel = document.querySelector('[data-receipt-form] select[name="warehouse_to"]');
+    if (!sel) return;
+    try {
+      const r = await fetch('/inventory/warehouses', { credentials: 'include' });
+      if (!r.ok) throw new Error();
+      const list = await r.json();
+      sel.innerHTML = list.map(w => `<option value="${w.code}">${w.code} – ${w.name}</option>`).join('');
+      // Default operativa si no hay preferencia previa
+      sel.value = 'BR';
+    } catch (_) {
+      // fallback keeps existing static options
+    }
+  })();
+  </script>
+{% endblock %}

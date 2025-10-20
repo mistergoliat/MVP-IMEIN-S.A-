@@ -1,0 +1,27 @@
+[project]
+name = "picking-api"
+version = "0.1.0"
+description = "API de picking para Zebra ZD888t"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi",
+  "httpx",
+  "uvicorn[standard]",
+  "sqlalchemy",
+  "asyncpg",
+  "alembic",
+  "python-dotenv",
+  "pydantic[email]",
+  "pydantic-settings",
+  "passlib[bcrypt]",
+  "bcrypt<4",
+  "jinja2",
+  "python-jose[cryptography]",
+  "openpyxl",
+  "pandas",
+  "python-multipart",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

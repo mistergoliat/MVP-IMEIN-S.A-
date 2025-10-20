@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Movimientos{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <header class="panel__header">
+    <div>
+      <h1>Movimientos (PO/SO/TR/RT)</h1>
+      <p class="panel__description">Visualiza y exporta movimientos.</p>
+    </div>
+    <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver</a>
+  </header>
+
+  <form method="get" class="form-grid" style="margin-bottom:12px;gap:12px;grid-template-columns: repeat(4, minmax(0,1fr));">
+    <select name="doc_type">
+      <option value="">Todos</option>
+      <option value="PO" {% if doc_type=='PO' %}selected{% endif %}>PO</option>
+      <option value="SO" {% if doc_type=='SO' %}selected{% endif %}>SO</option>
+      <option value="TR" {% if doc_type=='TR' %}selected{% endif %}>TR</option>
+      <option value="RT" {% if doc_type=='RT' %}selected{% endif %}>RT</option>
+    </select>
+    <select name="status">
+      <option value="">Estado (todos)</option>
+      <option value="pending" {% if status=='pending' %}selected{% endif %}>Pendiente</option>
+      <option value="approved" {% if status=='approved' %}selected{% endif %}>Aprobado</option>
+      <option value="draft" {% if status=='draft' %}selected{% endif %}>Borrador</option>
+    </select>
+    <div class="form-actions" style="grid-column: 1 / -1; display:flex; gap:8px;">
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+      <a class="btn" href="{{ url_for('moves_export') }}?doc_type={{ doc_type or '' }}&status={{ status or '' }}">Exportar CSV</a>
+    </div>
+  </form>
+
+  <section class="table-card">
+    <div class="table-card__body">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Documento</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Actualizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in items or [] %}
+          <tr>
+            <td class="mono">{{ m.id }}</td>
+            <td>{{ m.doc_type }}</td>
+            <td>{{ m.doc_number }}</td>
+            <td>{{ m.status }}</td>
+            <td>{{ m.created_at }}</td>
+            <td>{{ m.updated_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not items %}
+      <p class="empty-state">Sin resultados.</p>
+      {% endif %}
+    </div>
+  </section>
+</section>
+{% endblock %}
+
