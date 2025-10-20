@@ -15,6 +15,10 @@ API_BASE_URL = os.getenv("PICKING_API_URL", "http://picking-api:8000")
 API_TIMEOUT = float(os.getenv("PICKING_API_TIMEOUT", "10"))
 API_SERVICE_TOKEN = os.getenv("PRINT_SERVICE_TOKEN")
 
+# Cookie settings (allow overriding for non-HTTPS deployments)
+SECURE_COOKIES = os.getenv("UI_COOKIE_SECURE", "1").lower() in {"1", "true", "yes", "on"}
+COOKIE_DOMAIN = os.getenv("UI_COOKIE_DOMAIN") or None
+
 app = FastAPI(title="Picking UI", version="0.1.0")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -218,8 +222,8 @@ async def login_submit(request: Request):
         response = RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
 
     # Ajusta 'secure' y 'domain' en producción
-    response.set_cookie("auth_token", token, httponly=True, samesite="lax", secure=True, path="/", max_age=60*60*8)
-    response.set_cookie("username", username, samesite="lax", secure=True, path="/", max_age=60*60*8)
+    response.set_cookie("auth_token", token, httponly=True, samesite="lax", secure=SECURE_COOKIES, domain=COOKIE_DOMAIN, path="/", max_age=60*60*8)
+    response.set_cookie("username", username, samesite="lax", secure=SECURE_COOKIES, domain=COOKIE_DOMAIN, path="/", max_age=60*60*8)
     return response
 
 @app.get("/moves/new", response_class=HTMLResponse)
