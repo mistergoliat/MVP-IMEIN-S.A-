@@ -109,6 +109,48 @@ def normalize_moves(df: pd.DataFrame) -> pd.DataFrame:
         df["qty"] = 1
     return df[["itemcode", "qty", "date"]]
 
+# Reference helpers for supplier lists (HELI/TVH)
+def codes_set_from_df(df: pd.DataFrame) -> set:
+    df = df.rename(columns=lambda c: slug(c))
+    item_col = next((c for c in df.columns if c.startswith(("numero_de_articulo", "codigo", "itemcode", "sku", "item"))), None)
+    if item_col is None:
+        return set()
+    s = df[item_col].astype(str).str.strip().str.upper()
+    return set(s[s.ne("")])
+
+def load_supplier_sets(args):
+    heli_set, tvh_set = set(), set()
+    if getattr(args, "heli", None):
+        p = args.heli
+        try:
+            if str(p).lower().endswith((".xlsx", ".xlsm", ".xls")):
+                dfh = pd.read_excel(p, engine="openpyxl")
+            else:
+                dfh = pd.read_csv(p)
+            # incluir todos los cdigos del archivo HELI (independiente de Nombre extranjero)
+            heli_set = codes_set_from_df(dfh)
+        except Exception:
+            heli_set = set()
+    if getattr(args, "tvh", None):
+        p = args.tvh
+        try:
+            if str(p).lower().endswith((".xlsx", ".xlsm", ".xls")):
+                dft = pd.read_excel(p, engine="openpyxl")
+            else:
+                dft = pd.read_csv(p)
+            # si existe columna "Nombre extranjero", quedarnos con filas que indiquen TVH
+            dft_cols = {slug(c): c for c in dft.columns}
+            ne_col = dft_cols.get("nombre_extranjero")
+            if ne_col:
+                mask_tvh = dft[ne_col].astype(str).str.contains(r"\btvh\b", case=False, regex=True)
+                dft2 = dft[mask_tvh] if mask_tvh.any() else dft
+                tvh_set = codes_set_from_df(dft2)
+            else:
+                tvh_set = codes_set_from_df(dft)
+        except Exception:
+            tvh_set = set()
+    return heli_set, tvh_set
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Carga de datos
 # ──────────────────────────────────────────────────────────────────────────────
@@ -181,7 +223,7 @@ def load_inputs(args):
 # ──────────────────────────────────────────────────────────────────────────────
 # Núcleo ABC–XYZ
 # ──────────────────────────────────────────────────────────────────────────────
-def run(prices_df: pd.DataFrame, issues_df: pd.DataFrame):
+def run(prices_df: pd.DataFrame, issues_df: pd.DataFrame, heli_set=None, tvh_set=None):
     prices_df = prices_df.copy()
     issues_df = issues_df.copy()
 
@@ -236,11 +278,32 @@ def run(prices_df: pd.DataFrame, issues_df: pd.DataFrame):
     # Política simple (ROP/SS/EOQ) sobre demanda diaria aproximada
     daily_mean = master["monthly_mean"] / 30.0
     daily_std  = master["monthly_std"]  / 30.0
-    lead_time  = master["ABC"].map(LEAD_BY_ABC).fillna(LT_DEFAULT)
+    # Supplier resolution with HELI priority (lists + name contains 'heli')
+    heli_set = heli_set or set()
+    tvh_set = tvh_set or set()
+    name_contains_heli = master["item_name"].astype(str).str.contains(r"\bheli\b", case=False, regex=True)
+    supplier = pd.Series("NACIONAL", index=master.index, dtype=object)
+    supplier.loc[master.index.isin(tvh_set)] = "TVH"
+    supplier.loc[master.index.isin(heli_set) | name_contains_heli] = "HELI"
+    # Lead time by supplier (config override if present)
+    lt_map_default = {"HELI": 90, "TVH": 45, "NACIONAL": 3}
+    try:
+        with open("config.yaml", "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        pol = cfg.get("policy", {})
+        lt_map_cfg = pol.get("lead_time_by_supplier")
+        if isinstance(lt_map_cfg, dict) and lt_map_cfg:
+            lt_map_norm = {str(k).strip().upper(): int(v) for k, v in lt_map_cfg.items()}
+            lead_time = supplier.astype(str).str.upper().map(lt_map_norm).fillna(LT_DEFAULT)
+        else:
+            lead_time = supplier.map(lt_map_default).fillna(LT_DEFAULT)
+    except FileNotFoundError:
+        lead_time = supplier.map(lt_map_default).fillna(LT_DEFAULT)
     z_level    = [pick_z(a, x) for a, x in zip(master["ABC"], master["XYZ"])]
 
     master["z_level"] = z_level
     master["lead_time_days"] = lead_time
+    master["supplier"] = supplier
     master["SS"]  = master["z_level"] * np.sqrt(master["lead_time_days"]) * daily_std.fillna(0)
     master["ROP"] = daily_mean.fillna(0) * master["lead_time_days"] + master["SS"]
 
@@ -262,6 +325,8 @@ def run(prices_df: pd.DataFrame, issues_df: pd.DataFrame):
 
     monthly_out = mens.reset_index()
     master_out  = master.reset_index().sort_values(["ABC","XYZ","annual_qty"], ascending=[True, True, False])
+    # No exponer proveedor en salidas (solo lead_time_days)
+    master_out = master_out.drop(columns=["supplier"], errors="ignore")
     alerts_out  = master_out[master_out["BelowROP"]].copy()
     alerts_out["SuggestedOrderQty"] = (alerts_out["SMAX"] - alerts_out["OnHand"]).clip(lower=0.0)
 
@@ -286,13 +351,16 @@ def main():
     ap.add_argument("--issues")    # compatibilidad legacy
     ap.add_argument("--guias")     # NUEVO
     ap.add_argument("--salidas")   # NUEVO
+    ap.add_argument("--heli")      # lista de items HELI
+    ap.add_argument("--tvh")       # lista de items TVH
     args = ap.parse_args()
 
     prices_df, issues_df = load_inputs(args)
+    heli_set, tvh_set = load_supplier_sets(args)
     if issues_df.empty:
         raise SystemExit("No hay movimientos válidos tras normalización")
 
-    run(prices_df, issues_df)
+    run(prices_df, issues_df, heli_set=heli_set, tvh_set=tvh_set)
 
 if __name__ == "__main__":
     main()
