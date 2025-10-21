@@ -127,8 +127,15 @@ def load_supplier_sets(args):
                 dfh = pd.read_excel(p, engine="openpyxl")
             else:
                 dfh = pd.read_csv(p)
-            # incluir todos los cdigos del archivo HELI (independiente de Nombre extranjero)
+            # incluir todos los códigos del archivo HELI
             heli_set = codes_set_from_df(dfh)
+            # si existe columna "Nombre extranjero", sumar filas que indiquen HELI
+            dfh_cols = {slug(c): c for c in dfh.columns}
+            ne_col = dfh_cols.get("nombre_extranjero")
+            if ne_col:
+                mask_heli = dfh[ne_col].astype(str).str.contains(r"\bheli\b", case=False, regex=True)
+                if mask_heli.any():
+                    heli_set |= codes_set_from_df(dfh[mask_heli])
         except Exception:
             heli_set = set()
     if getattr(args, "tvh", None):
