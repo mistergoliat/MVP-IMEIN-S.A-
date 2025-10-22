@@ -150,11 +150,26 @@ function showPrinterSection(wrapper, shouldShow) {
   wrapper.hidden = !shouldShow;
 }
 
+// Initialize QZ Tray security hooks once (before any connect attempts)
+let __qzSecurityInitialized = false;
+function initQzSecurity() {
+  const { qz } = window;
+  if (!qz || __qzSecurityInitialized) return;
+  if (qz.security) {
+    // For production, replace with real certificate and signature logic
+    qz.security.setCertificatePromise((resolve) => resolve());
+    qz.security.setSignaturePromise(() => (resolve) => resolve());
+  }
+  __qzSecurityInitialized = true;
+}
+
 async function ensureQzConnected() {
   const { qz } = window;
   if (!qz) {
     throw new Error("QZ Tray no esta disponible en este navegador.");
   }
+  // Ensure security promises are in place before connecting (for wss flows)
+  initQzSecurity();
   if (!qz.websocket.isActive()) {
     await qz.websocket.connect();
   }
@@ -164,14 +179,6 @@ async function ensureQzConnected() {
 async function listPrinters(printerSelect, hintElement) {
   try {
     const qz = await ensureQzConnected();
-    if (qz.security) {
-      qz.security.setCertificatePromise((resolve) => {
-        resolve();
-      });
-      qz.security.setSignaturePromise(() => {
-        return (resolve) => resolve();
-      });
-    }
     const printers = await qz.printers.find();
     const filtered = printers.filter((name) => /zd/i.test(name) || /zdesigner/i.test(name));
     printerSelect.innerHTML = "";
