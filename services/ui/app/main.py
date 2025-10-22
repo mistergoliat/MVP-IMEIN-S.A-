@@ -360,7 +360,7 @@ async def move_confirm(request: Request, move_id: str):
         context = {
             "request": request,
             "move": move_payload,
-            "error": "Agrega al menos una lÃƒÂ­nea antes de confirmar.",
+            "error": "Agrega al menos una lí­nea antes de confirmar.",
         }
         return templates.TemplateResponse("move_detail.html", context, status_code=400)
 
@@ -422,6 +422,59 @@ class LabelPayload(BaseModel):
     copies: int = Field(default=1, ge=1, le=10)
 
 
+# -------- Labels proxy endpoints (UI -> API) --------
+@app.get("/labels/products")
+async def ui_labels_products(request: Request, q: str, field: str = "name", limit: int = 10):
+    token = _require_token(request)
+    if token is None:
+        raise HTTPException(status_code=401, detail="Credenciales requeridas.")
+    params = {"q": q, "field": field, "limit": str(limit)}
+    try:
+        resp = await _api_request("GET", "/labels/products", token, params=params)
+    except httpx.RequestError:
+        raise HTTPException(status_code=502, detail="No se pudo contactar la API de picking.")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=_safe_detail(resp, "Error buscando productos"))
+    try:
+        return resp.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Respuesta inválida desde la API de picking.")
+
+
+@app.post("/labels/preview")
+async def ui_labels_preview(payload: LabelPayload, request: Request):
+    token = _require_token(request)
+    if token is None:
+        raise HTTPException(status_code=401, detail="Credenciales requeridas.")
+    try:
+        resp = await _api_request("POST", "/labels/preview", token, json=payload.model_dump())
+    except httpx.RequestError:
+        raise HTTPException(status_code=502, detail="No se pudo contactar la API de picking.")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=_safe_detail(resp, "No se pudo generar la previsualización"))
+    try:
+        return resp.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Respuesta invalida desde la API de picking.")
+
+
+@app.post("/labels/print")
+async def ui_labels_print(payload: LabelPayload, request: Request):
+    token = _require_token(request)
+    if token is None:
+        raise HTTPException(status_code=401, detail="Credenciales requeridas.")
+    try:
+        resp = await _api_request("POST", "/labels/print", token, json=payload.model_dump())
+    except httpx.RequestError:
+        raise HTTPException(status_code=502, detail="No se pudo contactar la API de picking.")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=_safe_detail(resp, "No se pudo imprimir la etiqueta"))
+    try:
+        return resp.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Respuesta inválida desde la API de picking.")
+
+
 @app.get("/labels/jobs")
 async def labels_jobs(request: Request):
     token = _require_token(request)
@@ -430,16 +483,16 @@ async def labels_jobs(request: Request):
     try:
         response = await _api_request("GET", "/print/jobs", token)
     except httpx.RequestError:
-        raise HTTPException(status_code=502, detail="No se pudo obtener la cola de impresion.")
+        raise HTTPException(status_code=502, detail="No se pudo obtener la cola de impresión.")
     if response.status_code != 200:
         raise HTTPException(
             status_code=response.status_code,
-            detail=_safe_detail(response, "No se pudo obtener la cola de impresion."),
+            detail=_safe_detail(response, "No se pudo obtener la cola de impresión."),
         )
     try:
         data = response.json()
     except ValueError:
-        raise HTTPException(status_code=502, detail="Respuesta invalida al cargar la cola de impresion.")
+        raise HTTPException(status_code=502, detail="Respuesta inválida al cargar la cola de impresión.")
     return data
 
 
