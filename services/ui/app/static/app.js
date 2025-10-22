@@ -435,8 +435,15 @@ function initPrintModule() {
   if (!(form instanceof HTMLFormElement)) return;
 
   const multi = initMultiRow(form);
-  if (!multi) return;
-  const { rowsContainer, codeDatalist, nameDatalist } = multi;
+  // Fallback: si no existe estructura multi-row en esta vista, usar el propio form
+  let rowsContainer;
+  let codeDatalist = null;
+  let nameDatalist = null;
+  if (multi) {
+    ({ rowsContainer, codeDatalist, nameDatalist } = multi);
+  } else {
+    rowsContainer = form;
+  }
 
   let codeSuggestionMap = new Map();
   let nameSuggestionMap = new Map();
@@ -594,9 +601,10 @@ const fetchNameSuggestions = debounce(async (value) => {
   const handlePreview = async () => {
     clearStatus(statusMessage);
     try {
-      const rows = rowsContainer.querySelectorAll("[data-row]");
+      let rows = rowsContainer.querySelectorAll("[data-row]");
       if (!rows.length) {
-        throw new Error("Agrega al menos un SKU antes de previsualizar.");
+        // Soportar formulario simple sin filas repetibles
+        rows = [rowsContainer];
       }
       const previews = [];
       let lastResult = null;
@@ -645,9 +653,10 @@ const fetchNameSuggestions = debounce(async (value) => {
 const handlePrint = async () => {
   clearStatus(statusMessage);
   try {
-    const rows = rowsContainer.querySelectorAll("[data-row]");
+    let rows = rowsContainer.querySelectorAll("[data-row]");
     if (!rows.length) {
-      throw new Error("Agrega al menos un SKU antes de imprimir.");
+      // Soportar formulario simple sin filas repetibles
+      rows = [rowsContainer];
     }
     let lastResult = null;
     for (const row of rows) {
