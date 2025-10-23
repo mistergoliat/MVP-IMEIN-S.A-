@@ -150,28 +150,56 @@ function showPrinterSection(wrapper, shouldShow) {
   wrapper.hidden = !shouldShow;
 }
 
-// Initialize QZ Tray security hooks once (before any connect attempts)
-let __qzSecurityInitialized = false;
-function initQzSecurity() {
-  const { qz } = window;
-  if (!qz || __qzSecurityInitialized) return;
-  if (qz.security) {
-    // For production, replace with real certificate and signature logic
-    qz.security.setCertificatePromise((resolve) => resolve());
-    qz.security.setSignaturePromise(() => (resolve) => resolve());
+// Dynamically ensure qz-tray.js is loaded before use
+async function ensureQzScript() {
+  if (window.qz) return;
+  const existing = document.querySelector('script[data-qz-tray]');
+  if (existing) {
+    await new Promise((resolve, reject) => {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('No se pudo cargar qz-tray.js')), { once: true });
+    });
+    return;
   }
-  __qzSecurityInitialized = true;
+  const src = window.QZ_TRAY_SRC || 'https://cdn.jsdelivr.net/npm/qz-tray@2.2/qz-tray.js';
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    s.async = true;
+    s.dataset.qzTray = '1';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('No se pudo cargar qz-tray.js'));
+    document.head.appendChild(s);
+  });
 }
 
 async function ensureQzConnected() {
+  await ensureQzScript();
   const { qz } = window;
-  if (!qz) {
-    throw new Error("QZ Tray no esta disponible en este navegador.");
+  if (!qz) throw new Error("QZ Tray no esta disponible en este navegador.");
+  // Set security promises before connecting (QZ 2.2.x expectation)
+  try {
+    if (qz.security) {
+      if (typeof qz.security.setCertificatePromise === "function") {
+        qz.security.setCertificatePromise((resolve) => resolve());
+      }
+      if (typeof qz.security.setSignaturePromise === "function") {
+        qz.security.setSignaturePromise(() => (resolve) => resolve());
+      }
+    }
+  } catch (_) {
+    // ignore, allow connection attempt
   }
-  // Ensure security promises are in place before connecting (for wss flows)
-  initQzSecurity();
   if (!qz.websocket.isActive()) {
-    await qz.websocket.connect();
+    const secure = window.location.protocol === 'https:';
+    try {
+      await qz.websocket.connect({ usingSecure: secure });
+    } catch (e) {
+      // If secure fails (e.g., dev without cert), try insecure as fallback when allowed
+      if (secure) throw e;
+      await qz.websocket.connect({ usingSecure: false });
+    }
   }
   return qz;
 }
@@ -181,25 +209,26 @@ async function listPrinters(printerSelect, hintElement) {
     const qz = await ensureQzConnected();
     const printers = await qz.printers.find();
     const filtered = printers.filter((name) => /zd/i.test(name) || /zdesigner/i.test(name));
+    const toShow = filtered.length ? filtered : printers;
     printerSelect.innerHTML = "";
-    if (!filtered.length) {
+    if (!toShow.length) {
       const option = document.createElement("option");
-      option.textContent = "Sin coincidencias";
+      option.textContent = "Sin impresoras detectadas";
       option.value = "";
       printerSelect.appendChild(option);
       if (hintElement) {
-        hintElement.textContent = "No se detectaron impresoras Zebra. Asegura la conexion.";
+        hintElement.textContent = "No se detectaron impresoras. Verifica QZ Tray y permisos.";
       }
       return;
     }
-    filtered.forEach((name) => {
+    toShow.forEach((name) => {
       const option = document.createElement("option");
       option.value = name;
       option.textContent = name;
       printerSelect.appendChild(option);
     });
     if (hintElement) {
-      hintElement.textContent = "Selecciona la impresora destino.";
+      hintElement.textContent = filtered.length ? "Selecciona la impresora Zebra." : "Selecciona la impresora destino.";
     }
   } catch (error) {
     if (hintElement) {
@@ -435,14 +464,16 @@ function initPrintModule() {
   if (!(form instanceof HTMLFormElement)) return;
 
   const multi = initMultiRow(form);
-  // Fallback: si no existe estructura multi-row en esta vista, usar el propio form
-  let rowsContainer;
-  let codeDatalist = null;
-  let nameDatalist = null;
-  if (multi) {
-    ({ rowsContainer, codeDatalist, nameDatalist } = multi);
-  } else {
-    rowsContainer = form;
+  if (!multi) return;
+  const { rowsContainer, codeDatalist, nameDatalist } = multi;
+
+  // Ensure printer block is outside the clonable row so new rows don't include it
+  const printerBlock = form.querySelector('[data-printer-select-wrapper]');
+  if (printerBlock && rowsContainer) {
+    const firstRow = rowsContainer.querySelector('[data-row]');
+    if (firstRow && printerBlock.parentElement === firstRow) {
+      rowsContainer.insertAdjacentElement('afterend', printerBlock);
+    }
   }
 
   let codeSuggestionMap = new Map();
@@ -601,10 +632,9 @@ const fetchNameSuggestions = debounce(async (value) => {
   const handlePreview = async () => {
     clearStatus(statusMessage);
     try {
-      let rows = rowsContainer.querySelectorAll("[data-row]");
+      const rows = rowsContainer.querySelectorAll("[data-row]");
       if (!rows.length) {
-        // Soportar formulario simple sin filas repetibles
-        rows = [rowsContainer];
+        throw new Error("Agrega al menos un SKU antes de previsualizar.");
       }
       const previews = [];
       let lastResult = null;
@@ -653,10 +683,9 @@ const fetchNameSuggestions = debounce(async (value) => {
 const handlePrint = async () => {
   clearStatus(statusMessage);
   try {
-    let rows = rowsContainer.querySelectorAll("[data-row]");
+    const rows = rowsContainer.querySelectorAll("[data-row]");
     if (!rows.length) {
-      // Soportar formulario simple sin filas repetibles
-      rows = [rowsContainer];
+      throw new Error("Agrega al menos un SKU antes de imprimir.");
     }
     let lastResult = null;
     for (const row of rows) {
