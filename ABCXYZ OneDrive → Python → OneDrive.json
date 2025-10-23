@@ -1,0 +1,784 @@
+{
+  "name": "ABCXYZ OneDrive → Python → OneDrive",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMonth",
+              "hour": 8
+            }
+          ]
+        }
+      },
+      "id": "b6f8a969-7175-4c6c-a093-28296408ea26",
+      "name": "CRON",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1824,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "queryFilters": {
+          "name": [
+            {
+              "value": "precios"
+            },
+            {
+              "value": "salidas"
+            },
+            {
+              "value": "guias"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a689ec2f-9bd6-4710-ac3f-c5c031228ba1",
+      "name": "Drive List Inputs",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        208
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "SAoFB9tIXUB9zRKe",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "subject": "Faltan insumos ABC–XYZ {{$now.format('dd-LL-yyyy')}}",
+        "message": "No se corrió el pipeline. Faltan: {{$json.missing.join(', ')}}.",
+        "options": {}
+      },
+      "id": "fdd40dbf-52c7-49dc-90b0-fb9ec035b75a",
+      "name": "Gmail Notify Missing",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -1664,
+        16
+      ],
+      "webhookId": "46904683-cf9f-4fd4-8b34-319fac56b6aa"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.ok}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "cd35b248-fde7-43cf-829e-3b4aaa01e58f",
+      "name": "Pass when OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1424,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.fileId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "6f72ae5b-a463-487f-9b75-675a6264e259",
+      "name": "Download precios.xlsx",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        48
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "SAoFB9tIXUB9zRKe",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{$json.fileId}}",
+          "mode": ""
+        },
+        "options": {
+          "fileName": "guias.xlsx"
+        }
+      },
+      "id": "e8632657-9796-46dc-8b52-9d43b1362a01",
+      "name": "Download guias.xlsx",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        208
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "SAoFB9tIXUB9zRKe",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{$json.fileId}}",
+          "mode": ""
+        },
+        "options": {
+          "fileName": "salidas.xlsx"
+        }
+      },
+      "id": "93ff5e18-9298-4a4f-b5f4-fdfaa56695e2",
+      "name": "Download salidas.xlsx",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        368
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "SAoFB9tIXUB9zRKe",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileName": "/data/project/input/precios.xlsx",
+        "options": {}
+      },
+      "id": "aec1fca1-4a66-4237-8aff-177f92812fca",
+      "name": "Write precios → /data/project/input",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        48
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fileName": "/data/project/input/guias.xlsx",
+        "options": {}
+      },
+      "id": "d51b8f93-0026-4ec2-9258-24ea6d6bb8a4",
+      "name": "Write guias → /data/project/input",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        208
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fileName": "/data/project/input/salidas.xlsx",
+        "options": {}
+      },
+      "id": "8dae3ea7-a1c8-4714-94b5-9ed7932f1080",
+      "name": "Write salidas → /data/project/input",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        368
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "command": "sh -c \"cd /data/project && python3 abcxyz_main.py --source excel --prices ./input/precios.xlsx --guias ./input/guias.xlsx --salidas ./input/salidas.xlsx\""
+      },
+      "id": "0e2a8b8d-773c-4d14-826d-ac57a2192b2a",
+      "name": "Execute Python (abcxyz_main.py)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        208
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "command": "sh -c \"cd /data/project && python3 report_pdf.py\""
+      },
+      "id": "3cc8c7bf-f4f1-4723-93a4-c822a5d85fc7",
+      "name": "Build PDF (matplotlib)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        80,
+        16
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "45d77c61-d50d-4d38-887a-5530599440da",
+      "name": "Merge outputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        400,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "parentId",
+              "value": "={{$json.outputFolderId}}"
+            },
+            {
+              "name": "targetName",
+              "value": "={{\nconst base = $json.fileName || '';\nconst dmy  = $json.todayDMY || $now.format('dd-LL-yyyy');\nif (base.toLowerCase().endsWith('.pdf')) return `${dmy}_abcxyz_report.pdf`;\nif (base === 'abcxyz_results.xlsx')      return `${dmy}_abcxyz_results.xlsx`;\nif (base === 'abcxyz_master.csv')        return `${dmy}_abcxyz_master.csv`;\nif (base === 'monthly_demand.csv')       return `${dmy}_monthly_demand.csv`;\nif (base === 'reorder_alerts.csv')       return `${dmy}_reorder_alerts.csv`;\nreturn `${dmy}_` + base; }}"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "id": "14f9f39f-a015-4f7e-90f7-59e9c90ab8cf",
+      "name": "Set targetName + parentId",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        656,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "options": {
+          "fields": []
+        }
+      },
+      "id": "a2e6946b-5e64-49d9-a0ad-d4488a7a0601",
+      "name": "Drive Search existing",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        880,
+        224
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "SAoFB9tIXUB9zRKe",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{($json.files||[]).length}}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "id": "38cc11c3-2db6-4d59-b443-ddb5c405af33",
+      "name": "IF exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": "={{$json.files[0].id}}",
+        "updateFields": {},
+        "options": {}
+      },
+      "id": "111a9406-455f-4c35-b303-826b8feb9577",
+      "name": "Drive Update",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "parents": "={{$json.parentId}}",
+        "options": {}
+      },
+      "id": "eabf07e3-9e9e-4d30-94eb-496cd32f0637",
+      "name": "Drive Upload",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "joaquintorresducci@gmail.com",
+        "subject": "Reporte ABC–XYZ {{$now.format('dd-LL-yyyy')}}",
+        "message": "Se adjunta PDF ejecutivo ABC–XYZ.",
+        "options": {}
+      },
+      "id": "fb3410c6-91a2-49d3-a24a-fb068d921ee6",
+      "name": "Gmail Send PDF to Mgmt",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        528,
+        -16
+      ],
+      "webhookId": "7833030d-ba18-43ac-a9bb-17302dbc8248",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hv9Dw6NR6LbwNSJ4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const required = ['precios','guias','salidas'];\nconst norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');\nconst MS_PER_DAY = 24 * 60 * 60 * 1000;\nconst daysWindow = 120; // ajusta si hace falta\n\nfunction ts(r){\nconst t = r.lastModifiedDateTime\n|| (r.fileSystemInfo && r.fileSystemInfo.lastModifiedDateTime)\n|| r.modifiedTime || r.createdDateTime || r.createdTime;\nreturn t ? new Date(t).getTime() : 0;\n}\nfunction isFolder(r){ return !!(r.folder || (r.mimeType||'').includes('folder')); }\n\nconst now = Date.now();\nconst start = now - daysWindow*MS_PER_DAY;\n\nconst rows = items.map(i=>i.json)\n.filter(r => r && r.name && !isFolder(r))\n.map(r => ({...r, _n:norm(r.name), _ts: ts(r)}));\n\nconst buckets = { precios:[], guias:[], salidas:[] };\nfor (const r of rows) {\nif (r._n.includes('precio')) buckets.precios.push(r);\nif (r._n.includes('guia')) buckets.guias.push(r);\nif (r._n.includes('salida')) buckets.salidas.push(r);\n}\nfunction latest(arr){\nconst inWin = arr.filter(r => r._ts && r._ts >= start);\nconst pick = (inWin.length ? inWin : arr).sort((a,b)=>b._ts-a._ts)[0];\nif (!pick) return null;\nreturn { kind:'', fileId: pick.id||pick.fileId||pick.file_id, name: pick.name, modified: pick._ts? new Date(pick._ts).toISOString():null };\n}\nconst sel = {};\nfor (const k of Object.keys(buckets)) {\nconst s = latest(buckets[k]);\nif (s) sel[k] = {...s, kind: k};\n}\nconst missing = required.filter(k => !sel[k]);\n\n// IMPORTANTE: devolver 3 ítems (uno por tipo) para el Switch\nreturn Object.values(sel);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1392,
+        208
+      ],
+      "id": "db3cf7f6-f6e7-4d26-bb0a-9c8a6b813bb7",
+      "name": "Pick últimos"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "=precio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "69041bd7-cd97-4e9f-9e2a-a7321ceda910"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ea57acd7-d488-4d86-a15d-4effe5e5a415",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "=guias",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d37188a-90f6-4d5b-897d-e40c8c17b043",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "=salidas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -1168,
+        192
+      ],
+      "id": "75a2bb89-d7d7-41c4-93db-53792f432389",
+      "name": "Switch",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -544,
+        192
+      ],
+      "id": "fbe7352f-28e2-44fb-accd-1c9b1a756365",
+      "name": "Merge",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true } }]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        208
+      ],
+      "id": "86f82375-ab79-4f4e-843b-8de2fe559dbc",
+      "name": "Oneshot"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/project/output/csv/*.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        80,
+        400
+      ],
+      "id": "1443094f-1abc-4040-b20a-021442e78050",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/project/output/csv/*.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        320,
+        0
+      ],
+      "id": "c3028ccb-4241-4d4c-8289-d308151e87d5",
+      "name": "Read/Write Files from Disk1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CRON": {
+      "main": [
+        [
+          {
+            "node": "Drive List Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download precios.xlsx": {
+      "main": [
+        [
+          {
+            "node": "Write precios → /data/project/input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download guias.xlsx": {
+      "main": [
+        [
+          {
+            "node": "Write guias → /data/project/input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download salidas.xlsx": {
+      "main": [
+        [
+          {
+            "node": "Write salidas → /data/project/input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write precios → /data/project/input": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write guias → /data/project/input": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Write salidas → /data/project/input": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Execute Python (abcxyz_main.py)": {
+      "main": [
+        [
+          {
+            "node": "Build PDF (matplotlib)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build PDF (matplotlib)": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge outputs": {
+      "main": [
+        [
+          {
+            "node": "Set targetName + parentId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set targetName + parentId": {
+      "main": [
+        [
+          {
+            "node": "Drive Search existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive Search existing": {
+      "main": [
+        []
+      ]
+    },
+    "IF exists?": {
+      "main": [
+        [
+          {
+            "node": "Drive Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Drive Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive List Inputs": {
+      "main": [
+        [
+          {
+            "node": "Pick últimos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Download precios.xlsx",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download guias.xlsx",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download salidas.xlsx",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Oneshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick últimos": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oneshot": {
+      "main": [
+        [
+          {
+            "node": "Execute Python (abcxyz_main.py)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Gmail Send PDF to Mgmt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "IF exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a6376f52-6be7-4fce-b081-24f53e4948a6",
+  "meta": {
+    "instanceId": "6d95a61089f5d50a1454d9a6e7f2d45022ba55065c2c69364edd0320efb5f006"
+  },
+  "id": "A3GVI9naScyxLNd2",
+  "tags": []
+}
