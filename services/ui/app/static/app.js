@@ -150,13 +150,56 @@ function showPrinterSection(wrapper, shouldShow) {
   wrapper.hidden = !shouldShow;
 }
 
+// Dynamically ensure qz-tray.js is loaded before use
+async function ensureQzScript() {
+  if (window.qz) return;
+  const existing = document.querySelector('script[data-qz-tray]');
+  if (existing) {
+    await new Promise((resolve, reject) => {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('No se pudo cargar qz-tray.js')), { once: true });
+    });
+    return;
+  }
+  const src = window.QZ_TRAY_SRC || 'https://cdn.jsdelivr.net/npm/qz-tray@2.2/qz-tray.js';
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    s.async = true;
+    s.dataset.qzTray = '1';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('No se pudo cargar qz-tray.js'));
+    document.head.appendChild(s);
+  });
+}
+
 async function ensureQzConnected() {
+  await ensureQzScript();
   const { qz } = window;
-  if (!qz) {
-    throw new Error("QZ Tray no esta disponible en este navegador.");
+  if (!qz) throw new Error("QZ Tray no esta disponible en este navegador.");
+  // Set security promises before connecting (QZ 2.2.x expectation)
+  try {
+    if (qz.security) {
+      if (typeof qz.security.setCertificatePromise === "function") {
+        qz.security.setCertificatePromise((resolve) => resolve());
+      }
+      if (typeof qz.security.setSignaturePromise === "function") {
+        qz.security.setSignaturePromise(() => (resolve) => resolve());
+      }
+    }
+  } catch (_) {
+    // ignore, allow connection attempt
   }
   if (!qz.websocket.isActive()) {
-    await qz.websocket.connect();
+    const secure = window.location.protocol === 'https:';
+    try {
+      await qz.websocket.connect({ usingSecure: secure });
+    } catch (e) {
+      // If secure fails (e.g., dev without cert), try insecure as fallback when allowed
+      if (secure) throw e;
+      await qz.websocket.connect({ usingSecure: false });
+    }
   }
   return qz;
 }
@@ -164,35 +207,28 @@ async function ensureQzConnected() {
 async function listPrinters(printerSelect, hintElement) {
   try {
     const qz = await ensureQzConnected();
-    if (qz.security) {
-      qz.security.setCertificatePromise((resolve) => {
-        resolve();
-      });
-      qz.security.setSignaturePromise(() => {
-        return (resolve) => resolve();
-      });
-    }
     const printers = await qz.printers.find();
     const filtered = printers.filter((name) => /zd/i.test(name) || /zdesigner/i.test(name));
+    const toShow = filtered.length ? filtered : printers;
     printerSelect.innerHTML = "";
-    if (!filtered.length) {
+    if (!toShow.length) {
       const option = document.createElement("option");
-      option.textContent = "Sin coincidencias";
+      option.textContent = "Sin impresoras detectadas";
       option.value = "";
       printerSelect.appendChild(option);
       if (hintElement) {
-        hintElement.textContent = "No se detectaron impresoras Zebra. Asegura la conexion.";
+        hintElement.textContent = "No se detectaron impresoras. Verifica QZ Tray y permisos.";
       }
       return;
     }
-    filtered.forEach((name) => {
+    toShow.forEach((name) => {
       const option = document.createElement("option");
       option.value = name;
       option.textContent = name;
       printerSelect.appendChild(option);
     });
     if (hintElement) {
-      hintElement.textContent = "Selecciona la impresora destino.";
+      hintElement.textContent = filtered.length ? "Selecciona la impresora Zebra." : "Selecciona la impresora destino.";
     }
   } catch (error) {
     if (hintElement) {
@@ -430,6 +466,15 @@ function initPrintModule() {
   const multi = initMultiRow(form);
   if (!multi) return;
   const { rowsContainer, codeDatalist, nameDatalist } = multi;
+
+  // Ensure printer block is outside the clonable row so new rows don't include it
+  const printerBlock = form.querySelector('[data-printer-select-wrapper]');
+  if (printerBlock && rowsContainer) {
+    const firstRow = rowsContainer.querySelector('[data-row]');
+    if (firstRow && printerBlock.parentElement === firstRow) {
+      rowsContainer.insertAdjacentElement('afterend', printerBlock);
+    }
+  }
 
   let codeSuggestionMap = new Map();
   let nameSuggestionMap = new Map();

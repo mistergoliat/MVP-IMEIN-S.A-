@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Impresion de etiquetas ZPL{% endblock %}
 
 {% block content %}
@@ -7,7 +7,7 @@
     <div>
       <h1>Impresión de etiquetas</h1>
       <p class="panel__description">
-        Renderiza y envía etiquetas ZPL a impresoras Zebra ZD888T en modo local o de red.
+        Renderiza y enví­a etiquetas ZPL a impresoras Zebra ZD888T en modo local o de red.
       </p>
     </div>
     <a class="btn btn-tertiary" href="{{ url_for('dashboard') }}">Volver al dashboard</a>
@@ -24,14 +24,15 @@
     data-jobs='{{ (jobs or []) | tojson | safe }}'
   >
     <form class="form-card" data-print-form novalidate>
-      <div class="form-grid">
+      <div class="multi-rows" data-multi-rows>
+        <div class="form-grid" data-row>
         <div class="form-field">
           <label for="item_code">Codigo</label>
-          <input id="item_code" name="item_code" type="text" maxlength="24" required />
+          <input id="item_code" name="item_code" type="text" maxlength="24" required list="item_code_options" autocomplete="off" />
         </div>
         <div class="form-field">
           <label for="item_name">Descripcion</label>
-          <input id="item_name" name="item_name" type="text" maxlength="32" required />
+          <input id="item_name" name="item_name" type="text" maxlength="32" required list="item_name_options" autocomplete="off" />
         </div>
         <div class="form-field">
           <label for="fecha">Fecha</label>
@@ -51,7 +52,14 @@
             Conecta QZ Tray y acepta el certificado para habilitar la impresión local.
           </p>
         </div>
+          <button type="button" class="btn btn-ghost" data-remove-row hidden>Eliminar</button>
+        </div>
       </div>
+      <div class="form-actions" style="margin-top:8px;">
+        <button type="button" class="btn btn-ghost" data-add-row>Agregar SKU</button>
+      </div>
+      <datalist id="item_code_options"></datalist>
+      <datalist id="item_name_options"></datalist>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" data-preview-btn>Previsualizar</button>
         <button type="button" class="btn btn-primary" data-print-btn>Imprimir</button>
@@ -60,7 +68,7 @@
 
     <section class="preview-card" data-preview-panel hidden>
       <header class="preview-card__header">
-        <h2>Resultado de previsualizacion</h2>
+        <h2>Resultado de previsualización</h2>
         <span class="badge" data-template-badge></span>
       </header>
       <dl class="preview-meta">
@@ -69,11 +77,11 @@
           <dd data-copies-value>--</dd>
         </div>
         <div>
-          <dt>Etiquetas físicas</dt>
+          <dt>Etiquetas fí­sicas</dt>
           <dd data-effective-value>--</dd>
         </div>
         <div>
-          <dt>Modo de impresion</dt>
+          <dt>Modo de impresión</dt>
           <dd data-mode-value>--</dd>
         </div>
       </dl>
@@ -122,6 +130,6 @@
     </section>
   </div>
 </section>
-<script src="{{ url_for('static', path='vendor/qz-tray.js') }}" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2/qz-tray.js" defer></script>
 {% endblock %}
 
